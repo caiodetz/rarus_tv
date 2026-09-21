@@ -69,7 +69,7 @@
     }
 
     /* -------------------------------------------------------------
-       VÍDEO E CANVAS DE FUNDO EM LOOP FULLSCREEN (ANTI-TELA PRETA)
+       VÍDEO E SLIDES DE FUNDO (100% COMPATÍVEL COM SMART TV SAMSUNG)
        ------------------------------------------------------------- */
     .video-container {
       position: fixed;
@@ -79,19 +79,26 @@
       height: 100vh;
       z-index: 1;
       overflow: hidden;
-      background: linear-gradient(135deg, #090d16 0%, #111827 50%, #0f172a 100%);
+      background: #ffffff;
     }
 
-    #bgCanvas {
+    .slide-layer {
       position: absolute;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      object-fit: cover;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0;
+      transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 2;
       pointer-events: none;
-      display: block;
+    }
+
+    .slide-layer.visible {
+      opacity: 1;
     }
 
     #bgVideo {
@@ -106,7 +113,8 @@
       object-fit: cover;
       object-position: center;
       display: block;
-      z-index: 1;
+      z-index: 3;
+      transition: opacity 0.6s ease;
     }
 
     .vignette-overlay {
@@ -913,12 +921,13 @@
 
 <body>
 
-  <!-- VÍDEO E CANVAS PRINCIPAL EM LOOP (CANVAS RENDERIZA OS FRAMES PARA NUNCA FICAR PRETO) -->
+  <!-- APRESENTAÇÃO DE SLIDES NATIVA & VÍDEO (100% COMPATÍVEL COM SMART TV SAMSUNG) -->
   <div class="video-container">
+    <div class="slide-layer" id="slideA"></div>
+    <div class="slide-layer" id="slideB"></div>
     <video id="bgVideo" src="fundo.mp4" autoplay loop muted playsinline webkit-playsinline preload="auto">
       Seu navegador não suporta a tag de vídeo.
     </video>
-    <canvas id="bgCanvas"></canvas>
   </div>
 
   <!-- Vinheta cinematográfica -->
@@ -1281,28 +1290,59 @@
     }
 
     /* =============================================================
-       MOTOR DE RENDERIZAÇÃO DO VÍDEO NO CANVAS (ANTI-TELA PRETA INFALÍVEL)
+       MOTOR NATIVO DE SLIDES (100% COMPATÍVEL COM SMART TV SAMSUNG)
        ============================================================= */
-    const bgCanvas = document.getElementById('bgCanvas');
-    const bgCtx = bgCanvas ? bgCanvas.getContext('2d') : null;
+    const SLIDE_IMAGES = [
+      'slides/slide_1.jpg',
+      'slides/slide_2.jpg',
+      'slides/slide_3.jpg',
+      'slides/slide_4.jpg',
+      'slides/slide_5.jpg',
+      'slides/slide_6.jpg',
+      'slides/slide_7.jpg',
+      'slides/slide_8.jpg',
+      'slides/slide_9.jpg'
+    ];
 
-    function resizeBgCanvas() {
-      if (!bgCanvas) return;
-      bgCanvas.width = window.innerWidth;
-      bgCanvas.height = window.innerHeight;
+    // Pré-carregamento imediato na memória para transição instantânea
+    SLIDE_IMAGES.forEach(src => {
+      const img = new Image();
+      img.src = src;
+    });
+
+    const slideA = document.getElementById('slideA');
+    const slideB = document.getElementById('slideB');
+    let currentSlideIndex = 0;
+    let activeLayerIsA = true;
+    let slideTimer = null;
+
+    function initSlideEngine() {
+      if (!slideA || !slideB) return;
+      slideA.style.backgroundImage = `url('${SLIDE_IMAGES[0]}')`;
+      slideA.classList.add('visible');
+      slideB.classList.remove('visible');
+
+      clearInterval(slideTimer);
+      slideTimer = setInterval(advanceSlide, 10000); // 10s por slide, exatamente igual ao vídeo original
     }
-    window.addEventListener('resize', resizeBgCanvas);
-    resizeBgCanvas();
 
-    function renderCanvasLoop() {
-      if (bgCanvas && bgCtx && bgVideo && bgVideo.readyState >= 2) {
-        try {
-          bgCtx.drawImage(bgVideo, 0, 0, bgCanvas.width, bgCanvas.height);
-        } catch (e) {}
+    function advanceSlide() {
+      currentSlideIndex = (currentSlideIndex + 1) % SLIDE_IMAGES.length;
+      const nextSrc = SLIDE_IMAGES[currentSlideIndex];
+
+      if (activeLayerIsA) {
+        slideB.style.backgroundImage = `url('${nextSrc}')`;
+        slideB.classList.add('visible');
+        slideA.classList.remove('visible');
+      } else {
+        slideA.style.backgroundImage = `url('${nextSrc}')`;
+        slideA.classList.add('visible');
+        slideB.classList.remove('visible');
       }
-      requestAnimationFrame(renderCanvasLoop);
+      activeLayerIsA = !activeLayerIsA;
     }
-    requestAnimationFrame(renderCanvasLoop);
+
+    initSlideEngine();
 
     /* =============================================================
        CONTROLE DO VÍDEO DE FUNDO EM LOOP (ANTI-PAUSA E ANTI-CONGELAMENTO)
@@ -1315,6 +1355,9 @@
 
     function ensureBgVideoPlaying() {
       if (!bgVideo) return;
+      // No modo YouTube, o motor nativo de slides cuida da imagem para liberar o decodificador da TV
+      if (audioMode === 'youtube') return;
+
       bgVideo.muted = true;
       bgVideo.defaultMuted = true;
       bgVideo.volume = 0;
@@ -1324,7 +1367,7 @@
           p.catch(() => {
             bgVideo.muted = true;
             setTimeout(() => {
-              if (bgVideo && bgVideo.paused) bgVideo.play().catch(() => {});
+              if (bgVideo && bgVideo.paused && audioMode !== 'youtube') bgVideo.play().catch(() => {});
             }, 100);
           });
         }
@@ -1337,23 +1380,25 @@
         ensureBgVideoPlaying();
       });
       bgVideo.addEventListener('pause', () => {
-        setTimeout(ensureBgVideoPlaying, 30);
+        if (audioMode !== 'youtube') setTimeout(ensureBgVideoPlaying, 30);
       });
       bgVideo.addEventListener('stalled', () => {
-        setTimeout(ensureBgVideoPlaying, 100);
+        if (audioMode !== 'youtube') setTimeout(ensureBgVideoPlaying, 100);
       });
       bgVideo.addEventListener('waiting', () => {
-        setTimeout(ensureBgVideoPlaying, 100);
+        if (audioMode !== 'youtube') setTimeout(ensureBgVideoPlaying, 100);
       });
       bgVideo.addEventListener('error', () => {
-        setTimeout(() => {
-          bgVideo.load();
-          ensureBgVideoPlaying();
-        }, 300);
+        if (audioMode !== 'youtube') {
+          setTimeout(() => {
+            bgVideo.load();
+            ensureBgVideoPlaying();
+          }, 300);
+        }
       });
 
-      // Verificação regular a cada 1.5s: slides NUNCA param
-      setInterval(ensureBgVideoPlaying, 1500);
+      // Verificação regular a cada 2s quando em modo stream
+      setInterval(ensureBgVideoPlaying, 2000);
     }
 
     /* =============================================================
@@ -1721,7 +1766,13 @@
       if (isYtReady && ytPlayer) {
         try { ytPlayer.pauseVideo(); } catch (e) { }
       }
-      ensureBgVideoPlaying();
+
+      // Reativa bgVideo quando volta para rádio
+      if (bgVideo) {
+        bgVideo.style.opacity = '1';
+        bgVideo.style.pointerEvents = 'auto';
+        ensureBgVideoPlaying();
+      }
 
       // Toca Stream
       streamAudio.src = currentStreamUrl;
@@ -1752,7 +1803,14 @@
 
       // Pausa Stream
       streamAudio.pause();
-      ensureBgVideoPlaying();
+
+      // Libera 100% do decodificador de vídeo na Smart TV Samsung para o YouTube
+      // enquanto o motor nativo de slides exibe a apresentação com transição suave
+      if (bgVideo) {
+        try { bgVideo.pause(); } catch (e) { }
+        bgVideo.style.opacity = '0';
+        bgVideo.style.pointerEvents = 'none';
+      }
 
       if (titleHint) {
         currentTitle = titleHint;
@@ -2033,7 +2091,7 @@
        ============================================================= */
     function unlockAudio() {
       autoplayUnlocker.classList.add('hidden');
-      if (bgVideo.paused) bgVideo.play();
+      if (audioMode !== 'youtube' && bgVideo && bgVideo.paused) bgVideo.play().catch(() => {});
 
       if (audioMode === 'stream') {
         playStream(currentStreamUrl, currentTitle);
