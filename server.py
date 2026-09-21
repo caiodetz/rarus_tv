@@ -8,6 +8,7 @@ Servidor TV RARUS com Sincronização em Tempo Real (SSE)
 
 import os
 import sys
+import re
 import json
 import time
 import socket
@@ -139,7 +140,45 @@ class TVRarusHandler(SimpleHTTPRequestHandler):
             self.wfile.write(data)
             return
 
-        # 3. Arquivos Estáticos (index.html, fundo.mp4, etc.)
+        # 3. Suporte a Range Requests (HTTP 206) para streaming perfeito de vídeo (fundo.mp4)
+        range_header = self.headers.get("Range")
+        path_clean = self.path.split("?")[0].lstrip("/")
+        full_path = os.path.join(BASE_DIR, path_clean)
+
+        if range_header and os.path.isfile(full_path):
+            try:
+                file_size = os.path.getsize(full_path)
+                range_match = re.match(r"bytes=(\d+)-(\d*)", range_header)
+                if range_match:
+                    start = int(range_match.group(1))
+                    end = int(range_match.group(2)) if range_match.group(2) else file_size - 1
+                    end = min(end, file_size - 1)
+                    if start <= end:
+                        content_length = end - start + 1
+                        mime_type = self.guess_type(full_path)
+
+                        self.send_response(206, "Partial Content")
+                        self.send_header("Content-Type", mime_type)
+                        self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+                        self.send_header("Content-Length", str(content_length))
+                        self.send_header("Accept-Ranges", "bytes")
+                        self.send_header("Access-Control-Allow-Origin", "*")
+                        self.end_headers()
+
+                        with open(full_path, "rb") as f:
+                            f.seek(start)
+                            remaining = content_length
+                            while remaining > 0:
+                                chunk = f.read(min(remaining, 65536))
+                                if not chunk:
+                                    break
+                                self.wfile.write(chunk)
+                                remaining -= len(chunk)
+                        return
+            except Exception:
+                pass
+
+        # 4. Arquivos Estáticos Padrão
         super().do_GET()
 
     def do_POST(self):

@@ -914,7 +914,7 @@
 
   <!-- VÍDEO PRINCIPAL EM LOOP -->
   <div class="video-container">
-    <video id="bgVideo" src="fundo.mp4" autoplay loop muted playsinline preload="auto">
+    <video id="bgVideo" src="fundo.mp4" autoplay loop muted playsinline webkit-playsinline preload="auto">
       Seu navegador não suporta a tag de vídeo.
     </video>
   </div>
@@ -1279,6 +1279,46 @@
     }
 
     /* =============================================================
+       CONTROLE DO VÍDEO DE FUNDO EM LOOP (ANTI-TELA PRETA)
+       ============================================================= */
+    if (bgVideo) {
+      bgVideo.muted = true;
+      bgVideo.defaultMuted = true;
+      bgVideo.volume = 0;
+    }
+
+    function ensureBgVideoPlaying() {
+      if (!bgVideo) return;
+      if (bgVideo.paused) {
+        bgVideo.muted = true;
+        bgVideo.play().catch(() => {});
+      }
+    }
+
+    if (bgVideo) {
+      bgVideo.addEventListener('ended', () => {
+        bgVideo.currentTime = 0;
+        ensureBgVideoPlaying();
+      });
+      // Impede que o navegador pause o vídeo de fundo ao iniciar som do YouTube
+      bgVideo.addEventListener('pause', () => {
+        setTimeout(ensureBgVideoPlaying, 50);
+      });
+      bgVideo.addEventListener('stalled', () => {
+        setTimeout(ensureBgVideoPlaying, 200);
+      });
+      bgVideo.addEventListener('error', (e) => {
+        console.warn("Vídeo de fundo precisou recarregar:", e);
+        setTimeout(() => {
+          bgVideo.load();
+          ensureBgVideoPlaying();
+        }, 500);
+      });
+      // Heartbeat a cada 2.5s: fundo NUNCA congela ou fica preto
+      setInterval(ensureBgVideoPlaying, 2500);
+    }
+
+    /* =============================================================
        RELOGIO
        ============================================================= */
     function updateClock() {
@@ -1354,6 +1394,7 @@
       if (audioMode === 'youtube') {
         ytPlayerWrapper.classList.add('visible');
         ytPlayer.playVideo();
+        ensureBgVideoPlaying();
       }
     }
 
@@ -1364,6 +1405,7 @@
         isPlaying = true;
         updatePlayerUI(true);
         musicStatus.textContent = 'YouTube';
+        ensureBgVideoPlaying();
         try {
           const videoData = ytPlayer.getVideoData();
           if (videoData && videoData.title) {
@@ -1519,6 +1561,18 @@
             togglePlayPause(false);
           }
         }
+
+        // 5. Comandos Remotos (Ações enviadas pelo controle mobile)
+        if (data.action && !isInitial) {
+          if (data.action === 'reload') {
+            showToast("🔄 Recarregando TV...");
+            setTimeout(() => {
+              window.location.reload();
+            }, 600);
+          } else if (data.action === 'toggleFullscreen') {
+            toggleFullScreen();
+          }
+        }
       } finally {
         isApplyingRemoteConfig = false;
       }
@@ -1654,6 +1708,7 @@
       // Pausa Stream
       streamAudio.pause();
       ytPlayerWrapper.classList.add('visible');
+      ensureBgVideoPlaying();
 
       if (titleHint) {
         currentTitle = titleHint;
@@ -1666,6 +1721,7 @@
         ytPlayer.unMute();
         ytPlayer.setVolume(currentVolume);
         ytPlayer.playVideo();
+        ensureBgVideoPlaying();
         showToast("Carregando YouTube...");
       }
 
@@ -1765,17 +1821,9 @@
       }
     }
 
-    /* =============================================================
-       GARANTIR QUE O VÍDEO PRINCIPAL NUNCA PARE
-       ============================================================= */
-    bgVideo.addEventListener('ended', () => {
-      bgVideo.currentTime = 0;
-      bgVideo.play();
-    });
-
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
-        if (bgVideo.paused) bgVideo.play();
+        ensureBgVideoPlaying();
         if (isPlaying) {
           if (audioMode === 'stream' && streamAudio.paused) streamAudio.play().catch(() => { });
           if (audioMode === 'youtube' && isYtReady && ytPlayer) ytPlayer.playVideo();

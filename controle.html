@@ -452,20 +452,20 @@
       text-align: right;
     }
 
-    /* Quick options */
-    .quick-options {
-      display: flex;
+    /* Ações Rápidas */
+    .quick-actions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
 
-    .btn-opt {
-      flex: 1;
+    .btn-action {
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.12);
       color: #cbd5e1;
-      padding: 11px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 0.82rem;
+      padding: 13px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.86rem;
       font-weight: 600;
       cursor: pointer;
       display: flex;
@@ -473,13 +473,35 @@
       justify-content: center;
       gap: 8px;
       transition: all 0.15s ease;
+      font-family: inherit;
     }
 
-    .btn-opt:active {
+    .btn-action:active {
       transform: scale(0.96);
+      background: rgba(255, 255, 255, 0.14);
     }
 
-    .btn-opt.active {
+    .btn-action.fs-btn {
+      color: #93c5fd;
+      border-color: rgba(59, 130, 246, 0.3);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .btn-action.fs-btn:active {
+      background: rgba(59, 130, 246, 0.25);
+    }
+
+    .btn-action.reload-btn {
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .btn-action.reload-btn:active {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-action.clock-btn.active {
       background: rgba(99, 102, 241, 0.25);
       border-color: var(--accent);
       color: #fff;
@@ -646,9 +668,23 @@
         <span class="vol-label" id="volLabel">80%</span>
       </div>
 
-      <!-- Opções Rápidas -->
-      <div class="quick-options">
-        <button class="btn-opt" id="btnToggleClock">
+      <!-- Ações Rápidas da TV -->
+      <div class="quick-actions-grid">
+        <button class="btn-action fs-btn" id="btnRemoteFullscreen" title="Alternar Tela Cheia na TV">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+          </svg>
+          Tela Cheia
+        </button>
+
+        <button class="btn-action reload-btn" id="btnRemoteReload" title="Recarregar a página da TV">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+          </svg>
+          Recarregar TV
+        </button>
+
+        <button class="btn-action clock-btn" id="btnToggleClock" style="grid-column: span 2;">
           ⏰ <span id="clockStatusText">Relógio na TV</span>
         </button>
       </div>
@@ -1009,6 +1045,24 @@
       broadcastToTV({ showClock: showClock });
       showToast(showClock ? "⏰ Relógio ativado na TV" : "⏰ Relógio oculto na TV");
     });
+
+    // Tela Cheia na TV
+    const btnRemoteFullscreen = document.getElementById('btnRemoteFullscreen');
+    function triggerRemoteFullscreen() {
+      broadcastToTV({ action: 'toggleFullscreen', nonce: Date.now() });
+      showToast("⛶ Tela Cheia enviada para a TV!");
+    }
+    if (btnRemoteFullscreen) btnRemoteFullscreen.addEventListener('click', triggerRemoteFullscreen);
+    if (btnRemoteFs) btnRemoteFs.addEventListener('click', triggerRemoteFullscreen);
+
+    // Recarregar TV
+    const btnRemoteReload = document.getElementById('btnRemoteReload');
+    if (btnRemoteReload) {
+      btnRemoteReload.addEventListener('click', () => {
+        broadcastToTV({ action: 'reload', nonce: Date.now() });
+        showToast("🔄 Comando de Recarregar enviado à TV!");
+      });
+    }
 
     // Drawer de Canal
     statusPill.addEventListener('click', () => {
