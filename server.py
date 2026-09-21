@@ -213,6 +213,20 @@ class TVRarusHandler(SimpleHTTPRequestHandler):
             self.wfile.write(resp)
             return
 
+        # Log de diagnóstico: /api/log
+        if self.path == "/api/log":
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(content_length).decode("utf-8")
+                print(f"[BROWSER-LOG] {body}", flush=True)
+            except Exception as e:
+                print(f"[BROWSER-LOG-ERR] {e}", flush=True)
+            self.send_response(200)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(b'{"ok":true}')
+            return
+
         self.send_error(404, "Not Found")
 
     def do_OPTIONS(self):
