@@ -1,0 +1,11 @@
+{
+  "audioMode": "stream",
+  "streamUrl": "https://streams.ilovemusic.de/iloveradio17.mp3",
+  "youtubeId": "5yx6BWlEVcY",
+  "title": "🎧 Lofi Chillhop 24/7",
+  "volume": 80,
+  "isPlaying": true,
+  "showClock": true,
+  "updatedAt": 1789995540000,
+  "updatedBy": "server"
+}

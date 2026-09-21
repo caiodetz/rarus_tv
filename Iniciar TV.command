@@ -21,5 +21,5 @@ echo "========================================================"
 # Abre no navegador padrão
 sleep 1 && open "http://localhost:$PORT/index.html" &
 
-# Inicia servidor web local leve do Python
-python3 -m http.server $PORT
+# Inicia servidor central com sincronização global em tempo real
+python3 server.py $PORT

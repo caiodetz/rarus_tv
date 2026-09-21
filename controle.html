@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#07090e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>TV RARUS - Controle Remoto</title>
+
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --surface-1: #0f172a;
+      --surface-2: #1e293b;
+      --glass-bg: rgba(15, 23, 42, 0.85);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      --accent-glow: rgba(99, 102, 241, 0.35);
+      --danger: #ef4444;
+      --success: #10b981;
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-full: 9999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.12) 0%, transparent 40%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 20px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* -------------------------------------------------------------
+       HEADER & STATUS
+       ------------------------------------------------------------- */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: #fff;
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff 40%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.04em;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--glass-border);
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* -------------------------------------------------------------
+       CARD DE STATUS ATUAL NA TV
+       ------------------------------------------------------------- */
+    .now-playing-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .equalizer-box {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 3px;
+      padding-bottom: 10px;
+    }
+
+    .eq-bar {
+      width: 4px;
+      background: var(--accent);
+      border-radius: 2px;
+      height: 6px;
+      transition: height 0.2s;
+    }
+
+    .playing .eq-bar:nth-child(1) { animation: eq-wave 0.9s infinite ease-in-out; }
+    .playing .eq-bar:nth-child(2) { animation: eq-wave 0.7s infinite ease-in-out 0.15s; }
+    .playing .eq-bar:nth-child(3) { animation: eq-wave 1.1s infinite ease-in-out 0.3s; }
+    .playing .eq-bar:nth-child(4) { animation: eq-wave 0.8s infinite ease-in-out 0.1s; }
+
+    @keyframes eq-wave {
+      0%, 100% { height: 4px; }
+      50% { height: 20px; }
+    }
+
+    .now-playing-meta {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .now-playing-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      margin-bottom: 2px;
+    }
+
+    .now-playing-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* -------------------------------------------------------------
+       CARD PRINCIPAL: COLAR LINK DO YOUTUBE
+       ------------------------------------------------------------- */
+    .card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 22px 20px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .input-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .input-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1.5px solid rgba(255, 255, 255, 0.14);
+      border-radius: var(--radius-md);
+      padding: 14px 75px 14px 16px;
+      font-family: inherit;
+      font-size: 0.92rem;
+      color: #fff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .input-field:focus {
+      border-color: var(--accent);
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .btn-paste {
+      position: absolute;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      border: none;
+      color: #fff;
+      padding: 7px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-paste:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 14px 20px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.02rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 6px 20px var(--accent-glow);
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+
+    .btn-primary svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    /* -------------------------------------------------------------
+       RÁDIOS 24/7 (PRESETS)
+       ------------------------------------------------------------- */
+    .presets-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .preset-button {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      padding: 13px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .preset-button:active {
+      transform: scale(0.98);
+    }
+
+    .preset-button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    /* -------------------------------------------------------------
+       CONTROLES DE REPRODUÇÃO & VOLUME
+       ------------------------------------------------------------- */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .ctrl-btn {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #fff;
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .ctrl-btn:active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .ctrl-btn.main-play {
+      width: 64px;
+      height: 64px;
+      background: var(--accent-gradient);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .ctrl-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .ctrl-btn.main-play svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    /* Volume Slider */
+    .volume-slider-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .volume-slider-box svg {
+      width: 22px;
+      height: 22px;
+      fill: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 7px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.18);
+      outline: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+    }
+
+    .vol-label {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      width: 38px;
+      text-align: right;
+    }
+
+    /* Quick options */
+    .quick-options {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-opt {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      padding: 11px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-opt:active {
+      transform: scale(0.96);
+    }
+
+    .btn-opt.active {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* -------------------------------------------------------------
+       TOAST
+       ------------------------------------------------------------- */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 12px 22px;
+      border-radius: var(--radius-full);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #fff;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      text-align: center;
+      white-space: nowrap;
+      max-width: 90vw;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Modal do Canal */
+    .channel-drawer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      z-index: 90;
+      align-items: flex-end;
+    }
+
+    .channel-drawer.open {
+      display: flex;
+    }
+
+    .drawer-card {
+      width: 100%;
+      background: var(--surface-1);
+      border-top: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      padding: 24px 20px 34px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/>
+          </svg>
+        </div>
+        <span class="brand-title">TV RARUS</span>
+      </div>
+
+      <div class="status-pill" id="statusPill" title="Clique para alterar o canal">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Conectando...</span>
+      </div>
+    </header>
+
+    <!-- Card: Tocando Agora na TV -->
+    <div class="now-playing-card">
+      <div class="equalizer-box playing" id="eqBox">
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+      </div>
+      <div class="now-playing-meta">
+        <div class="now-playing-label" id="nowPlayingType">Tocando na TV</div>
+        <div class="now-playing-title" id="nowPlayingTitle">Carregando trilha...</div>
+      </div>
+    </div>
+
+    <!-- CARD PRINCIPAL: COLAR LINK DO YOUTUBE -->
+    <div class="card">
+      <div class="card-title">
+        <span>▶️ Tocar Trilha do YouTube</span>
+      </div>
+      <p class="card-desc">
+        Abra o YouTube no seu celular, copie o link do vídeo e cole abaixo para tocar na TV:
+      </p>
+
+      <div class="input-row">
+        <div class="input-container">
+          <input type="text" class="input-field" id="ytUrlInput"
+            placeholder="Cole o link do YouTube aqui..." autocomplete="off">
+          <button class="btn-paste" id="btnPaste" title="Colar da Área de Transferência">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/>
+            </svg>
+            Colar
+          </button>
+        </div>
+
+        <button class="btn-primary" id="btnSendYouTube">
+          <svg viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          Tocar na TV Agora
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD: CONTROLES DE ÁUDIO -->
+    <div class="card">
+      <div class="card-title">
+        <span>🎛️ Controles da TV</span>
+      </div>
+
+      <!-- Play / Pause / Mute -->
+      <div class="controls-row">
+        <button class="ctrl-btn" id="btnRemoteMute" title="Mutar / Desmutar">
+          <svg id="iconVol" viewBox="0 0 24 24">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+        </button>
+
+        <button class="ctrl-btn main-play" id="btnRemotePlayPause" title="Tocar / Pausar">
+          <svg id="iconPlay" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          <svg id="iconPause" style="display:none;" viewBox="0 0 24 24">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+          </svg>
+        </button>
+
+        <button class="ctrl-btn" id="btnRemoteFs" title="Tela Cheia na TV">
+          <svg viewBox="0 0 24 24">
+            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Slider de Volume -->
+      <div class="volume-slider-box">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+        </svg>
+        <input type="range" class="slider" id="remoteVolumeSlider" min="0" max="100" value="80">
+        <span class="vol-label" id="volLabel">80%</span>
+      </div>
+
+      <!-- Opções Rápidas -->
+      <div class="quick-options">
+        <button class="btn-opt" id="btnToggleClock">
+          ⏰ <span id="clockStatusText">Relógio na TV</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD: RÁDIOS WEB 24/7 -->
+    <div class="card">
+      <div class="card-title">
+        <span>📻 Rádios 24/7 (Sem Anúncios)</span>
+      </div>
+      <div class="presets-grid" id="presetsList">
+        <button class="preset-button" data-url="https://streams.ilovemusic.de/iloveradio17.mp3" data-title="🎧 Lofi Chillhop 24/7">
+          <span>🎧 Lofi Chillhop 24/7</span>
+          <span>▶</span>
+        </button>
+        <button class="preset-button" data-url="https://jazz-wr01.ice.infomaniak.ch/jazz-wr01-128.mp3" data-title="☕ Classic Jazz Cafe">
+          <span>☕ Classic Jazz Cafe</span>
+          <span>▶</span>
+        </button>
+        <button class="preset-button" data-url="https://stream.zeno.fm/0r0xa792kwzuv" data-title="🌴 Chillout & Lounge">
+          <span>🌴 Chillout & Lounge</span>
+          <span>▶</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drawer para Configurar o Canal de Sincronização -->
+  <div class="channel-drawer" id="channelDrawer">
+    <div class="drawer-card">
+      <div class="card-title">🌐 Canal de Sincronização</div>
+      <p class="card-desc">Certifique-se de que a TV e o celular estão usando o mesmo canal para sincronizar:</p>
+      <input type="text" class="input-field" id="drawerChannelInput" placeholder="Ex: tv_rarus_oficial">
+      <button class="btn-primary" id="btnSaveChannel">Salvar e Conectar</button>
+    </div>
+  </div>
+
+  <!-- Toast de Notificação -->
+  <div class="toast" id="toast">Pronto!</div>
+
+  <script>
+    // Parâmetros de Conexão
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentChannel = urlParams.get('channel') || localStorage.getItem('tv_rarus_channel') || 'tv_rarus_oficial';
+    const CLIENT_ID = 'remote_' + Math.random().toString(36).substring(2, 9);
+
+    // Estado Local do Controle
+    let isPlaying = true;
+    let currentVolume = 80;
+    let showClock = true;
+    let audioMode = 'stream';
+    let currentTitle = 'Carregando...';
+    let isApplyingUpdate = false;
+    let sseInstance = null;
+
+    // Elementos DOM
+    const statusPill = document.getElementById('statusPill');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const nowPlayingType = document.getElementById('nowPlayingType');
+    const nowPlayingTitle = document.getElementById('nowPlayingTitle');
+    const eqBox = document.getElementById('eqBox');
+    const ytUrlInput = document.getElementById('ytUrlInput');
+    const btnPaste = document.getElementById('btnPaste');
+    const btnSendYouTube = document.getElementById('btnSendYouTube');
+    const btnRemotePlayPause = document.getElementById('btnRemotePlayPause');
+    const iconPlay = document.getElementById('iconPlay');
+    const iconPause = document.getElementById('iconPause');
+    const btnRemoteMute = document.getElementById('btnRemoteMute');
+    const remoteVolumeSlider = document.getElementById('remoteVolumeSlider');
+    const volLabel = document.getElementById('volLabel');
+    const btnToggleClock = document.getElementById('btnToggleClock');
+    const btnRemoteFs = document.getElementById('btnRemoteFs');
+    const toast = document.getElementById('toast');
+    const channelDrawer = document.getElementById('channelDrawer');
+    const drawerChannelInput = document.getElementById('drawerChannelInput');
+    const btnSaveChannel = document.getElementById('btnSaveChannel');
+
+    // Toast
+    let toastTimeout = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    // Status de Conexão
+    function setConnectionStatus(connected, text) {
+      if (connected) {
+        statusDot.style.background = 'var(--success)';
+        statusDot.style.boxShadow = '0 0 10px var(--success)';
+        statusText.textContent = text || 'TV Conectada';
+      } else {
+        statusDot.style.background = '#eab308';
+        statusDot.style.boxShadow = 'none';
+        statusText.textContent = text || 'Reconectando...';
+      }
+    }
+
+    // Transmissão de comandos para a TV
+    function broadcastToTV(updates) {
+      const payload = {
+        ...updates,
+        updatedBy: CLIENT_ID,
+        updatedAt: Date.now()
+      };
+
+      // Envia para o canal na nuvem (ntfy.sh)
+      fetch(`https://ntfy.sh/${currentChannel}`, {
+        method: 'POST',
+        headers: { 'Title': 'TV RARUS Remote' },
+        body: JSON.stringify(payload)
+      }).catch(err => console.warn("Erro ao enviar ntfy:", err));
+
+      // Se estiver na mesma origem HTTP (Vercel ou servidor local), envia também para /api/config
+      if (window.location.protocol.startsWith('http')) {
+        fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      }
+    }
+
+    // Aplicar estado recebido da TV
+    function applyStateFromTV(data) {
+      if (!data) return;
+      if (data.updatedBy === CLIENT_ID) return;
+
+      isApplyingUpdate = true;
+      try {
+        if (typeof data.isPlaying === 'boolean') {
+          isPlaying = data.isPlaying;
+          iconPlay.style.display = isPlaying ? 'none' : 'block';
+          iconPause.style.display = isPlaying ? 'block' : 'none';
+          if (isPlaying) eqBox.classList.add('playing');
+          else eqBox.classList.remove('playing');
+        }
+
+        if (typeof data.volume === 'number') {
+          currentVolume = data.volume;
+          remoteVolumeSlider.value = currentVolume;
+          volLabel.textContent = `${currentVolume}%`;
+        }
+
+        if (typeof data.showClock === 'boolean') {
+          showClock = data.showClock;
+          btnToggleClock.classList.toggle('active', showClock);
+        }
+
+        if (data.title) {
+          currentTitle = data.title;
+          nowPlayingTitle.textContent = currentTitle;
+        }
+
+        if (data.audioMode) {
+          audioMode = data.audioMode;
+          nowPlayingType.textContent = audioMode === 'youtube' ? '▶️ YouTube' : '📻 Rádio Ao Vivo';
+          updatePresetButtonsUI(data.streamUrl);
+        }
+      } finally {
+        isApplyingUpdate = false;
+      }
+    }
+
+    // Atualiza botões de preset
+    function updatePresetButtonsUI(activeUrl) {
+      document.querySelectorAll('.preset-button').forEach(btn => {
+        const url = btn.getAttribute('data-url');
+        if (audioMode === 'stream' && activeUrl === url) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
+    // Conectar à Nuvem (SSE)
+    function connectCloud() {
+      if (sseInstance) {
+        try { sseInstance.close(); } catch(e) {}
+      }
+
+      setConnectionStatus(false, 'Conectando...');
+
+      // 1. Busca estado atual da TV
+      fetch(`https://ntfy.sh/${currentChannel}/json?poll=1`)
+        .then(res => res.text())
+        .then(text => {
+          if (!text) return;
+          const lines = text.trim().split('\n');
+          for (let i = lines.length - 1; i >= 0; i--) {
+            try {
+              const item = JSON.parse(lines[i]);
+              if (item.event === 'message' && item.message) {
+                const data = JSON.parse(item.message);
+                applyStateFromTV(data);
+                break;
+              }
+            } catch(e) {}
+          }
+        }).catch(() => {});
+
+      // 2. Conexão em tempo real
+      try {
+        sseInstance = new EventSource(`https://ntfy.sh/${currentChannel}/sse`);
+
+        sseInstance.onopen = () => {
+          setConnectionStatus(true, 'TV Conectada');
+        };
+
+        sseInstance.onmessage = (e) => {
+          try {
+            const envelope = JSON.parse(e.data);
+            if (envelope.event === 'message' && envelope.message) {
+              const data = JSON.parse(envelope.message);
+              applyStateFromTV(data);
+            }
+          } catch(err) {}
+        };
+
+        sseInstance.onerror = () => {
+          setConnectionStatus(false, 'Reconectando...');
+          try { sseInstance.close(); } catch(e) {}
+          setTimeout(connectCloud, 4000);
+        };
+      } catch (err) {
+        setConnectionStatus(false, 'Erro Conexão');
+      }
+    }
+
+    // Extrair ID do YouTube
+    function extractYouTubeId(url) {
+      if (!url) return null;
+      const clean = url.trim();
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = clean.match(regExp);
+      if (match && match[2].length === 11) return match[2];
+      if (/^[a-zA-Z0-9_-]{11}$/.test(clean)) return clean;
+      return null;
+    }
+
+    // Enviar YouTube
+    function sendYouTubeToTV() {
+      const val = ytUrlInput.value.trim();
+      if (!val) {
+        showToast("⚠️ Cole um link do YouTube primeiro");
+        return;
+      }
+
+      const id = extractYouTubeId(val);
+      if (!id) {
+        showToast("❌ Link do YouTube inválido");
+        return;
+      }
+
+      broadcastToTV({
+        audioMode: 'youtube',
+        youtubeId: id,
+        title: "Trilha do YouTube",
+        isPlaying: true
+      });
+
+      nowPlayingTitle.textContent = "Carregando no YouTube...";
+      nowPlayingType.textContent = "▶️ YouTube";
+      eqBox.classList.add('playing');
+      showToast("🚀 Enviado para a TV!");
+      ytUrlInput.value = '';
+    }
+
+    btnSendYouTube.addEventListener('click', sendYouTubeToTV);
+    ytUrlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendYouTubeToTV();
+    });
+
+    // Botão Colar da Área de Transferência
+    btnPaste.addEventListener('click', async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            ytUrlInput.value = text.trim();
+            showToast("📋 Link colado!");
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Clipboard access blocked:", err);
+      }
+      ytUrlInput.focus();
+      showToast("Pressione e segure o campo para Colar");
+    });
+
+    // Clique nos Presets de Rádio
+    document.querySelectorAll('.preset-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.getAttribute('data-url');
+        const title = btn.getAttribute('data-title');
+        broadcastToTV({
+          audioMode: 'stream',
+          streamUrl: url,
+          title: title,
+          isPlaying: true
+        });
+        nowPlayingTitle.textContent = title;
+        nowPlayingType.textContent = '📻 Rádio Ao Vivo';
+        eqBox.classList.add('playing');
+        updatePresetButtonsUI(url);
+        showToast(`📻 Tocando: ${title}`);
+      });
+    });
+
+    // Play / Pause
+    btnRemotePlayPause.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      iconPlay.style.display = isPlaying ? 'none' : 'block';
+      iconPause.style.display = isPlaying ? 'block' : 'none';
+      if (isPlaying) eqBox.classList.add('playing');
+      else eqBox.classList.remove('playing');
+
+      broadcastToTV({ isPlaying: isPlaying });
+      showToast(isPlaying ? "▶️ Reproduzindo na TV" : "⏸️ Pausado na TV");
+    });
+
+    // Mute
+    btnRemoteMute.addEventListener('click', () => {
+      if (currentVolume > 0) {
+        broadcastToTV({ volume: 0 });
+        remoteVolumeSlider.value = 0;
+        volLabel.textContent = "0%";
+        showToast("🔇 TV no Mudo");
+      } else {
+        broadcastToTV({ volume: 80 });
+        remoteVolumeSlider.value = 80;
+        volLabel.textContent = "80%";
+        showToast("🔊 Volume restaurado");
+      }
+    });
+
+    // Volume Slider com debounce
+    let volTimeout = null;
+    remoteVolumeSlider.addEventListener('input', (e) => {
+      const vol = parseInt(e.target.value, 10);
+      currentVolume = vol;
+      volLabel.textContent = `${vol}%`;
+
+      clearTimeout(volTimeout);
+      volTimeout = setTimeout(() => {
+        broadcastToTV({ volume: vol });
+      }, 150);
+    });
+
+    // Relógio
+    btnToggleClock.addEventListener('click', () => {
+      showClock = !showClock;
+      btnToggleClock.classList.toggle('active', showClock);
+      broadcastToTV({ showClock: showClock });
+      showToast(showClock ? "⏰ Relógio ativado na TV" : "⏰ Relógio oculto na TV");
+    });
+
+    // Drawer de Canal
+    statusPill.addEventListener('click', () => {
+      drawerChannelInput.value = currentChannel;
+      channelDrawer.classList.add('open');
+    });
+
+    channelDrawer.addEventListener('click', (e) => {
+      if (e.target === channelDrawer) channelDrawer.classList.remove('open');
+    });
+
+    btnSaveChannel.addEventListener('click', () => {
+      const clean = drawerChannelInput.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+      if (clean) {
+        currentChannel = clean;
+        localStorage.setItem('tv_rarus_channel', currentChannel);
+        channelDrawer.classList.remove('open');
+        connectCloud();
+        showToast(`🌐 Conectado ao canal: ${currentChannel}`);
+      }
+    });
+
+    // Inicialização
+    connectCloud();
+  </script>
+</body>
+
+</html>

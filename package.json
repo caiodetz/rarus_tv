@@ -1,0 +1,18 @@
+{
+  "name": "tv-rarus",
+  "version": "1.0.0",
+  "description": "TV RARUS - Vídeo em Loop & Trilha Sonora com Sincronização em Tempo Real",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 server.py 8080"
+  },
+  "keywords": [
+    "tv",
+    "digital-signage",
+    "youtube",
+    "video-loop",
+    "realtime-sync"
+  ],
+  "author": "Caio Detz",
+  "license": "MIT"
+}
