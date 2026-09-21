@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#07090e">
+  <title>TV RARUS - Vídeo & Trilha Sonora</title>
+
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* -------------------------------------------------------------
+       DESIGN SYSTEM & CSS RESET
+       ------------------------------------------------------------- */
+    :root {
+      --bg-dark: #07090e;
+      --glass-bg: rgba(15, 23, 42, 0.75);
+      --glass-bg-hover: rgba(30, 41, 59, 0.88);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent: #6366f1;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      --accent-glow: rgba(99, 102, 241, 0.4);
+      --tv-focus-border: #38bdf8;
+      --tv-focus-glow: rgba(56, 189, 248, 0.7);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --shadow-elevation: 0 10px 30px -5px rgba(0, 0, 0, 0.7), 0 0 20px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html,
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-primary);
+    }
+
+    /* Ocultar cursor e HUD após inatividade na TV */
+    body.idle {
+      cursor: none;
+    }
+
+    body.idle .hud-element {
+      opacity: 0 !important;
+      pointer-events: none !important;
+      transform: translateY(14px);
+    }
+
+    /* -------------------------------------------------------------
+       FOCO DESTACADO PARA CONTROLE REMOTO DE TV (D-PAD)
+       ------------------------------------------------------------- */
+    :focus {
+      outline: none;
+    }
+
+    .tv-focusable {
+      outline: none;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .tv-focusable:focus,
+    .tv-focusable.tv-focused {
+      outline: none !important;
+      transform: scale(1.12) !important;
+      border-color: var(--tv-focus-border) !important;
+      box-shadow: 0 0 0 3px var(--tv-focus-border), 0 0 25px var(--tv-focus-glow) !important;
+      background: rgba(30, 58, 138, 0.85) !important;
+      z-index: 25;
+      position: relative;
+    }
+
+    .preset-chip.tv-focused,
+    .preset-chip:focus {
+      background: var(--tv-focus-border) !important;
+      color: #0f172a !important;
+      font-weight: 700 !important;
+      border-color: #fff !important;
+      box-shadow: 0 0 20px var(--tv-focus-glow) !important;
+      transform: scale(1.08) !important;
+    }
+
+    .text-input.tv-focused,
+    .text-input:focus {
+      border-color: var(--tv-focus-border) !important;
+      box-shadow: 0 0 0 3px var(--tv-focus-glow) !important;
+      background: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    .btn.tv-focused,
+    .btn:focus {
+      box-shadow: 0 0 0 3px var(--tv-focus-border), 0 0 25px var(--tv-focus-glow) !important;
+      transform: scale(1.05) !important;
+    }
+
+    /* -------------------------------------------------------------
+       VÍDEO DE FUNDO EM LOOP FULLSCREEN
+       ------------------------------------------------------------- */
+    .video-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      overflow: hidden;
+      background: #000;
+    }
+
+    #bgVideo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: 100vw;
+      height: 100vh;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 2;
+      pointer-events: none;
+      background: radial-gradient(circle at center,
+          rgba(0, 0, 0, 0) 45%,
+          rgba(0, 0, 0, 0.5) 100%);
+    }
+
+    /* Container do YouTube posicionado no canto (mini player dentro da tela para evitar bloqueio anti-background) */
+    .yt-player-wrapper {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      width: 240px;
+      height: 135px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      z-index: 8;
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-elevation);
+      background: #000;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: none;
+      /* Ativado apenas se modo YouTube estiver em uso */
+    }
+
+    .yt-player-wrapper.visible {
+      display: block;
+    }
+
+    .yt-player-wrapper.minimized {
+      width: 4px;
+      height: 4px;
+      opacity: 0.01;
+      pointer-events: none;
+      border: none;
+    }
+
+    #ytPlayerContainer {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* -------------------------------------------------------------
+       CAMADA DE INTERFACE (HUD)
+       ------------------------------------------------------------- */
+    .hud-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 2.2rem 3rem;
+      transition: opacity 0.5s ease;
+    }
+
+    .hud-element {
+      pointer-events: auto;
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .brand-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 10px 22px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-elevation);
+    }
+
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 14px #10b981;
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+      }
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: 0.06em;
+      background: linear-gradient(135deg, #ffffff 30%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+    }
+
+    .clock-widget {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 10px 24px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-elevation);
+    }
+
+    .clock-time {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .clock-date {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: capitalize;
+      margin-top: 4px;
+    }
+
+    /* -------------------------------------------------------------
+       BARRA DE CONTROLE INFERIOR
+       ------------------------------------------------------------- */
+    .bottom-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .control-island {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      padding: 12px 26px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-elevation);
+      transition: all 0.3s ease;
+    }
+
+    .control-island:hover {
+      background: var(--glass-bg-hover);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid transparent;
+      color: var(--text-primary);
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: scale(1.08);
+    }
+
+    .icon-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .icon-btn.primary {
+      background: var(--accent-gradient);
+      box-shadow: 0 0 20px var(--accent-glow);
+      width: 52px;
+      height: 52px;
+    }
+
+    .icon-btn.primary:hover {
+      box-shadow: 0 0 28px rgba(99, 102, 241, 0.7);
+    }
+
+    .divider {
+      width: 1px;
+      height: 28px;
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .music-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      max-width: 340px;
+    }
+
+    .equalizer-icon {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 20px;
+      width: 20px;
+    }
+
+    .eq-bar {
+      width: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: height 0.2s ease;
+      height: 4px;
+    }
+
+    .playing .eq-bar:nth-child(1) {
+      animation: eq-jump 1s infinite ease-in-out;
+    }
+
+    .playing .eq-bar:nth-child(2) {
+      animation: eq-jump 0.8s infinite ease-in-out 0.2s;
+    }
+
+    .playing .eq-bar:nth-child(3) {
+      animation: eq-jump 1.1s infinite ease-in-out 0.4s;
+    }
+
+    .playing .eq-bar:nth-child(4) {
+      animation: eq-jump 0.9s infinite ease-in-out 0.1s;
+    }
+
+    @keyframes eq-jump {
+
+      0%,
+      100% {
+        height: 4px;
+      }
+
+      50% {
+        height: 20px;
+      }
+    }
+
+    .music-info {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .music-status {
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+    }
+
+    .music-title {
+      font-size: 0.9rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+      color: #fff;
+    }
+
+    .volume-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .volume-slider-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .volume-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 90px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .volume-slider.tv-focused::-webkit-slider-thumb,
+    .volume-slider:focus::-webkit-slider-thumb {
+      transform: scale(1.4);
+      background: var(--tv-focus-border);
+      box-shadow: 0 0 14px var(--tv-focus-border);
+    }
+
+    .tv-remote-legend {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.65);
+      background: rgba(10, 15, 30, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 6px 18px;
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .remote-key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+      margin-right: 4px;
+    }
+
+    .key-red {
+      background: rgba(239, 68, 68, 0.35);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+
+    .key-green {
+      background: rgba(16, 185, 129, 0.35);
+      border-color: #10b981;
+      color: #6ee7b7;
+    }
+
+    .key-yellow {
+      background: rgba(245, 158, 11, 0.35);
+      border-color: #f59e0b;
+      color: #fde68a;
+    }
+
+    .key-blue {
+      background: rgba(59, 130, 246, 0.35);
+      border-color: #3b82f6;
+      color: #93c5fd;
+    }
+
+    /* -------------------------------------------------------------
+       MODAL DE CONFIGURAÇÕES (YOUTUBE & RÁDIOS WEB)
+       ------------------------------------------------------------- */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(4, 6, 12, 0.84);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #0f172a;
+      border: 1px solid var(--glass-border);
+      width: 90%;
+      max-width: 600px;
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 35px rgba(99, 102, 241, 0.25);
+      transform: scale(0.94) translateY(12px);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-backdrop.open .modal-card {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .section-subtitle {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .preset-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #cbd5e1;
+      padding: 10px 16px;
+      border-radius: var(--radius-full);
+      font-size: 0.84rem;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preset-chip.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .text-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      font-family: inherit;
+      font-size: 0.92rem;
+      color: #fff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .form-hint {
+      font-size: 0.76rem;
+      color: #94a3b8;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .file-mode-alert {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      color: #fde68a;
+      margin-top: 10px;
+      line-height: 1.4;
+      display: none;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      padding: 11px 22px;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      color: #fff;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    /* -------------------------------------------------------------
+       OVERLAY INICIAL DE DESBLOQUEIO DE AUTOPLAY
+       ------------------------------------------------------------- */
+    .autoplay-unlocker {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+
+    .autoplay-unlocker.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .unlock-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      background: var(--glass-bg);
+      border: 2px solid var(--glass-border);
+      padding: 40px 55px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-elevation);
+      animation: float-card 3s ease-in-out infinite;
+      cursor: pointer;
+    }
+
+    @keyframes float-card {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+
+    .play-pulse-btn {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 35px var(--accent-glow);
+    }
+
+    .play-pulse-btn svg {
+      width: 38px;
+      height: 38px;
+      fill: #fff;
+      margin-left: 5px;
+    }
+
+    .unlock-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+    }
+
+    .unlock-subtext {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .unlock-remote-tip {
+      font-size: 0.82rem;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      margin-top: 4px;
+    }
+
+    /* -------------------------------------------------------------
+       NOTIFICAÇÃO TOAST
+       ------------------------------------------------------------- */
+    .toast {
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--tv-focus-border);
+      padding: 12px 26px;
+      border-radius: var(--radius-full);
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #fff;
+      z-index: 60;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px var(--tv-focus-glow);
+      text-align: center;
+      max-width: 80vw;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (min-width: 2560px) {
+      .hud-layer {
+        padding: 4.5rem;
+      }
+
+      .clock-time {
+        font-size: 3.8rem;
+      }
+
+      .clock-date {
+        font-size: 1.2rem;
+      }
+
+      .brand-title {
+        font-size: 1.8rem;
+      }
+
+      .control-island {
+        padding: 18px 36px;
+        gap: 24px;
+      }
+
+      .icon-btn {
+        width: 62px;
+        height: 62px;
+      }
+
+      .icon-btn.primary {
+        width: 68px;
+        height: 68px;
+      }
+
+      .icon-btn svg {
+        width: 32px;
+        height: 32px;
+      }
+
+      .music-title {
+        font-size: 1.2rem;
+        max-width: 360px;
+      }
+
+      .volume-slider {
+        width: 140px;
+        height: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- VÍDEO PRINCIPAL EM LOOP -->
+  <div class="video-container">
+    <video id="bgVideo" src="fundo.mp4" autoplay loop muted playsinline preload="auto">
+      Seu navegador não suporta a tag de vídeo.
+    </video>
+  </div>
+
+  <!-- Vinheta cinematográfica -->
+  <!-- <div class="vignette-overlay"></div> -->
+
+  <!-- PLAYER NATIVO DE STREAMING DE ÁUDIO (Garante funcionamento 100% em file:// e Smart TVs) -->
+  <audio id="streamAudio" preload="auto"></audio>
+
+  <!-- CONTAINER DO YOUTUBE PLAYER (Visível na tela para evitar bloqueio anti-scraping do YouTube) -->
+  <div class="yt-player-wrapper minimized" id="ytPlayerWrapper">
+    <div id="ytPlayerContainer"></div>
+  </div>
+
+  <!-- CAMADA HUD (Informações e Controles) -->
+  <div class="hud-layer">
+    <!-- Topo -->
+    <div class="top-bar">
+      <div class="brand-badge hud-element">
+        <div class="live-dot"></div>
+        <span class="brand-title">TV RARUS</span>
+      </div>
+
+      <div class="clock-widget hud-element" id="clockWidget">
+        <div class="clock-time" id="clockTime">00:00:00</div>
+        <div class="clock-date" id="clockDate">Carregando...</div>
+      </div>
+    </div>
+
+    <!-- Barra de Controles Inferior -->
+    <div class="bottom-bar">
+      <div class="control-island hud-element" id="controlIsland">
+        <!-- Play / Pause -->
+        <button class="icon-btn primary tv-focusable" id="btnPlayPause" tabindex="0" title="Tocar / Pausar Música">
+          <svg id="iconPlay" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          <svg id="iconPause" style="display:none;" viewBox="0 0 24 24">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+          </svg>
+        </button>
+
+        <!-- Indicador de Trilha Sonora -->
+        <div class="music-meta">
+          <div class="equalizer-icon" id="equalizer">
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+          </div>
+          <div class="music-info">
+            <span class="music-status" id="musicStatus">Trilha Sonora</span>
+            <span class="music-title" id="musicTitle">Carregando áudio...</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Mute / Volume -->
+        <div class="volume-group">
+          <button class="icon-btn tv-focusable" id="btnMute" tabindex="0" title="Mutar / Desmutar">
+            <svg id="iconVolumeHigh" viewBox="0 0 24 24">
+              <path
+                d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+            </svg>
+            <svg id="iconVolumeMute" style="display:none;" viewBox="0 0 24 24">
+              <path
+                d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+            </svg>
+          </button>
+          <div class="volume-slider-wrapper">
+            <input type="range" class="volume-slider tv-focusable" id="volumeSlider" min="0" max="100" value="80"
+              tabindex="0" title="Ajustar Volume">
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Configurações / Trocar Trilha -->
+        <button class="icon-btn tv-focusable" id="btnSettings" tabindex="0" title="Configurar Trilha Sonora">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+          </svg>
+        </button>
+
+        <!-- Alternar Tela Cheia -->
+        <button class="icon-btn tv-focusable" id="btnFullscreen" tabindex="0" title="Tela Cheia">
+          <svg id="iconFsEnter" viewBox="0 0 24 24">
+            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+          </svg>
+          <svg id="iconFsExit" style="display:none;" viewBox="0 0 24 24">
+            <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Barra de Atalhos do Controle Remoto da TV -->
+      <div class="tv-remote-legend hud-element">
+        <span><span class="remote-key">◄ ► ▲ ▼</span> Navegar</span>
+        <span><span class="remote-key">OK</span> Selecionar</span>
+        <span><span class="remote-key key-red">Vermelho</span> Configurar</span>
+        <span><span class="remote-key key-green">Verde</span> Relógio</span>
+        <span><span class="remote-key key-blue">Azul</span> Próxima Trilha</span>
+        <span><span class="remote-key">Voltar</span> Fechar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY INICIAL DE DESBLOQUEIO DE ÁUDIO -->
+  <div class="autoplay-unlocker" id="autoplayUnlocker">
+    <div class="unlock-card tv-focusable" id="unlockCard" tabindex="0">
+      <div class="play-pulse-btn">
+        <svg viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </div>
+      <h2 class="unlock-text">Iniciar TV com Som</h2>
+      <p class="unlock-subtext">Pressione o botão <strong>OK</strong> do controle ou clique na tela</p>
+      <div class="unlock-remote-tip">Pressione [OK] no controle da TV para começar</div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIGURAÇÕES -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Escolher Trilha Sonora</h3>
+        <button class="icon-btn tv-focusable" id="btnCloseModal" tabindex="0" title="Fechar">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- SEÇÃO 1: RÁDIOS WEB (100% GARANTIDO EM QUALQUER DISPOSITIVO / TV / FILE://) -->
+      <div class="form-group">
+        <div class="section-subtitle">📻 Rádios 24/7 (Alta Estabilidade - Sem Bloqueios)</div>
+        <div class="preset-chips" id="streamPresets">
+          <button class="preset-chip tv-focusable" data-type="stream"
+            data-url="https://streams.ilovemusic.de/iloveradio17.mp3" data-title="🎧 Lofi Chillhop 24/7">🎧 Lofi
+            Chillhop 24/7</button>
+          <button class="preset-chip tv-focusable" data-type="stream"
+            data-url="https://jazz-wr01.ice.infomaniak.ch/jazz-wr01-128.mp3" data-title="☕ Classic Jazz Cafe">☕ Classic
+            Jazz Cafe</button>
+          <button class="preset-chip tv-focusable" data-type="stream" data-url="https://stream.zeno.fm/0r0xa792kwzuv"
+            data-title="🌴 Chillout & Lounge">🌴 Chillout & Lounge</button>
+        </div>
+      </div>
+
+      <!-- SEÇÃO 2: YOUTUBE -->
+      <div class="form-group">
+        <div class="section-subtitle">▶️ Trilha do YouTube (Link Personalizado)</div>
+        <div class="input-wrapper">
+          <input type="text" class="text-input tv-focusable" id="ytInput" tabindex="0"
+            placeholder="Cole o link do YouTube (Ex: https://www.youtube.com/watch?v=...)">
+        </div>
+
+        <div class="file-mode-alert" id="fileModeAlert">
+          ⚠️ <strong>Atenção:</strong> Como você abriu o arquivo direto pelo PC (modo <code>file://</code>), o YouTube
+          bloqueia certas incorporações. Para usar links do YouTube sem restrições, use o executável <strong>Iniciar
+            TV.command</strong> ou escolha uma das Rádios 24/7 acima.
+        </div>
+        <p class="form-hint">Dica: Ao rodar na Smart TV ou via servidor local, qualquer link do YouTube funciona
+          normalmente.</p>
+      </div>
+
+      <!-- SEÇÃO 3: OPÇÕES GERAIS -->
+      <div class="form-group" style="margin-top: 15px;">
+        <div class="section-subtitle">Opções da Tela</div>
+        <div style="display: flex; gap: 20px; margin-top: 6px;">
+          <label style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; cursor: pointer;">
+            <input type="checkbox" id="checkClock" class="tv-focusable" tabindex="0" checked
+              style="width: 18px; height: 18px; accent-color: var(--accent);"> Exibir Relógio na TV
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary tv-focusable" id="btnCancelConfig" tabindex="0">Cancelar</button>
+        <button class="btn btn-primary tv-focusable" id="btnSaveConfig" tabindex="0">Aplicar Trilha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast">Pronto!</div>
+
+  <!-- YOUTUBE IFRAME API SCRIPT -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+  <!-- LÓGICA PRINCIPAL COM DUAL AUDIO ENGINE (STREAM + YOUTUBE) -->
+  <script>
+    /* =============================================================
+       ESTADO E ARMAZENAMENTO LOCAL
+       ============================================================= */
+    const STORAGE_KEY_MODE = 'tv_rarus_audio_mode'; // 'stream' ou 'youtube'
+    const STORAGE_KEY_STREAM_URL = 'tv_rarus_stream_url';
+    const STORAGE_KEY_YT_ID = 'tv_rarus_yt_id';
+    const STORAGE_KEY_TITLE = 'tv_rarus_title';
+    const STORAGE_KEY_VOLUME = 'tv_rarus_volume';
+    const STORAGE_KEY_CLOCK = 'tv_rarus_show_clock';
+
+    const DEFAULT_STREAM = {
+      url: "https://streams.ilovemusic.de/iloveradio17.mp3",
+      title: "🎧 Lofi Chillhop 24/7"
+    };
+
+    const STREAM_PRESETS = [
+      { url: "https://streams.ilovemusic.de/iloveradio17.mp3", title: "🎧 Lofi Chillhop 24/7" },
+      { url: "https://jazz-wr01.ice.infomaniak.ch/jazz-wr01-128.mp3", title: "☕ Classic Jazz Cafe" },
+      { url: "https://stream.zeno.fm/0r0xa792kwzuv", title: "🌴 Chillout & Lounge" }
+    ];
+
+    const isFileProtocol = window.location.protocol === 'file:';
+
+    // Se for aberto via file://, usa como padrão o streaming nativo que não dá erro
+    let audioMode = localStorage.getItem(STORAGE_KEY_MODE) || (isFileProtocol ? 'stream' : 'stream');
+    let currentStreamUrl = localStorage.getItem(STORAGE_KEY_STREAM_URL) || DEFAULT_STREAM.url;
+    let currentVideoId = localStorage.getItem(STORAGE_KEY_YT_ID) || '5yx6BWlEVcY';
+    let currentTitle = localStorage.getItem(STORAGE_KEY_TITLE) || DEFAULT_STREAM.title;
+    let currentVolume = parseInt(localStorage.getItem(STORAGE_KEY_VOLUME) || '80', 10);
+    let showClock = localStorage.getItem(STORAGE_KEY_CLOCK) !== 'false';
+
+    let ytPlayer = null;
+    let isYtReady = false;
+    let isPlaying = false;
+    let isMuted = false;
+    let idleTimeout = null;
+    let toastTimeout = null;
+
+    /* Elementos DOM */
+    const bgVideo = document.getElementById('bgVideo');
+    const streamAudio = document.getElementById('streamAudio');
+    const ytPlayerWrapper = document.getElementById('ytPlayerWrapper');
+    const autoplayUnlocker = document.getElementById('autoplayUnlocker');
+    const unlockCard = document.getElementById('unlockCard');
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const iconPlay = document.getElementById('iconPlay');
+    const iconPause = document.getElementById('iconPause');
+    const equalizer = document.getElementById('equalizer');
+    const musicStatus = document.getElementById('musicStatus');
+    const musicTitle = document.getElementById('musicTitle');
+    const btnMute = document.getElementById('btnMute');
+    const iconVolumeHigh = document.getElementById('iconVolumeHigh');
+    const iconVolumeMute = document.getElementById('iconVolumeMute');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const btnSettings = document.getElementById('btnSettings');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const iconFsEnter = document.getElementById('iconFsEnter');
+    const iconFsExit = document.getElementById('iconFsExit');
+    const settingsModal = document.getElementById('settingsModal');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancelConfig = document.getElementById('btnCancelConfig');
+    const btnSaveConfig = document.getElementById('btnSaveConfig');
+    const ytInput = document.getElementById('ytInput');
+    const fileModeAlert = document.getElementById('fileModeAlert');
+    const checkClock = document.getElementById('checkClock');
+    const clockWidget = document.getElementById('clockWidget');
+    const clockTime = document.getElementById('clockTime');
+    const clockDate = document.getElementById('clockDate');
+    const toast = document.getElementById('toast');
+
+    if (isFileProtocol && fileModeAlert) {
+      fileModeAlert.style.display = 'block';
+    }
+
+    /* =============================================================
+       CONTROLE ESPACIAL (D-PAD SMART TV)
+       ============================================================= */
+    let currentFocusedElement = null;
+
+    function getVisibleFocusableElements() {
+      if (!autoplayUnlocker.classList.contains('hidden')) {
+        return [unlockCard];
+      }
+      if (settingsModal.classList.contains('open')) {
+        return Array.from(settingsModal.querySelectorAll('.tv-focusable')).filter(el => {
+          return el.offsetParent !== null && !el.disabled;
+        });
+      }
+      return Array.from(document.querySelectorAll('#controlIsland .tv-focusable')).filter(el => {
+        return el.offsetParent !== null && !el.disabled;
+      });
+    }
+
+    function setTVFocus(element) {
+      if (!element) return;
+      if (currentFocusedElement) currentFocusedElement.classList.remove('tv-focused');
+      currentFocusedElement = element;
+      currentFocusedElement.classList.add('tv-focused');
+      try { currentFocusedElement.focus(); } catch (e) { }
+      resetIdleTimer();
+    }
+
+    function findClosestElement(currentEl, direction) {
+      const candidates = getVisibleFocusableElements();
+      if (!candidates.length) return null;
+      if (!currentEl || !candidates.includes(currentEl)) return candidates[0];
+
+      const currentRect = currentEl.getBoundingClientRect();
+      const currentCenterX = currentRect.left + currentRect.width / 2;
+      const currentCenterY = currentRect.top + currentRect.height / 2;
+
+      let bestCandidate = null;
+      let minDistance = Infinity;
+
+      candidates.forEach(candidate => {
+        if (candidate === currentEl) return;
+        const rect = candidate.getBoundingClientRect();
+        const candCenterX = rect.left + rect.width / 2;
+        const candCenterY = rect.top + rect.height / 2;
+        const deltaX = candCenterX - currentCenterX;
+        const deltaY = candCenterY - currentCenterY;
+
+        let isValid = false;
+        let primaryDist = 0, secondaryDist = 0;
+
+        if (direction === 'right' && deltaX > 10) { isValid = true; primaryDist = deltaX; secondaryDist = Math.abs(deltaY); }
+        else if (direction === 'left' && deltaX < -10) { isValid = true; primaryDist = -deltaX; secondaryDist = Math.abs(deltaY); }
+        else if (direction === 'down' && deltaY > 10) { isValid = true; primaryDist = deltaY; secondaryDist = Math.abs(deltaX); }
+        else if (direction === 'up' && deltaY < -10) { isValid = true; primaryDist = -deltaY; secondaryDist = Math.abs(deltaX); }
+
+        if (isValid) {
+          const dist = primaryDist + secondaryDist * 2.2;
+          if (dist < minDistance) {
+            minDistance = dist;
+            bestCandidate = candidate;
+          }
+        }
+      });
+
+      if (!bestCandidate) {
+        const index = candidates.indexOf(currentEl);
+        if (direction === 'right' || direction === 'down') {
+          bestCandidate = candidates[(index + 1) % candidates.length];
+        } else {
+          bestCandidate = candidates[(index - 1 + candidates.length) % candidates.length];
+        }
+      }
+      return bestCandidate;
+    }
+
+    function handleTVNavigation(direction) {
+      resetIdleTimer();
+      if (currentFocusedElement === volumeSlider) {
+        if (direction === 'left') {
+          setVolume(Math.max(0, currentVolume - 5));
+          volumeSlider.value = currentVolume;
+          showToast(`Volume: ${currentVolume}%`);
+          return;
+        } else if (direction === 'right') {
+          setVolume(Math.min(100, currentVolume + 5));
+          volumeSlider.value = currentVolume;
+          showToast(`Volume: ${currentVolume}%`);
+          return;
+        }
+      }
+
+      const next = findClosestElement(currentFocusedElement, direction);
+      if (next) setTVFocus(next);
+    }
+
+    function handleTVSelect() {
+      resetIdleTimer();
+      if (!autoplayUnlocker.classList.contains('hidden')) {
+        unlockAudio();
+        return;
+      }
+      if (currentFocusedElement) {
+        if (currentFocusedElement.type === 'checkbox') {
+          currentFocusedElement.checked = !currentFocusedElement.checked;
+        } else {
+          currentFocusedElement.click();
+        }
+      }
+    }
+
+    function handleTVBack() {
+      resetIdleTimer();
+      if (settingsModal.classList.contains('open')) {
+        closeModal();
+        return;
+      }
+      if (!document.body.classList.contains('idle')) {
+        document.body.classList.add('idle');
+      }
+    }
+
+    /* =============================================================
+       RELOGIO
+       ============================================================= */
+    function updateClock() {
+      const now = new Date();
+      clockTime.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      clockDate.textContent = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    if (!showClock) clockWidget.style.display = 'none';
+
+    /* =============================================================
+       MOTOR DE ÁUDIO DUPLO (STREAM NATIVO + YOUTUBE)
+       ============================================================= */
+    // Inicialização do Stream de Áudio Nativo
+    streamAudio.src = currentStreamUrl;
+    streamAudio.volume = currentVolume / 100;
+
+    streamAudio.addEventListener('playing', () => {
+      if (audioMode === 'stream') {
+        isPlaying = true;
+        updatePlayerUI(true);
+        musicStatus.textContent = 'Rádio Ao Vivo';
+        musicTitle.textContent = currentTitle;
+      }
+    });
+
+    streamAudio.addEventListener('pause', () => {
+      if (audioMode === 'stream') {
+        isPlaying = false;
+        updatePlayerUI(false);
+      }
+    });
+
+    streamAudio.addEventListener('error', (e) => {
+      console.warn("Erro no stream de áudio:", e);
+      if (audioMode === 'stream') {
+        musicStatus.textContent = 'Reconectando Rádio...';
+        setTimeout(() => {
+          if (isPlaying) streamAudio.play().catch(() => { });
+        }, 3000);
+      }
+    });
+
+    // Inicialização do YouTube API
+    window.onYouTubeIframeAPIReady = function () {
+      ytPlayer = new YT.Player('ytPlayerContainer', {
+        height: '100%',
+        width: '100%',
+        videoId: currentVideoId,
+        playerVars: {
+          autoplay: 0,
+          loop: 1,
+          playlist: currentVideoId,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          rel: 0,
+          modestbranding: 1
+        },
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange,
+          'onError': onPlayerError
+        }
+      });
+    };
+
+    function onPlayerReady(event) {
+      isYtReady = true;
+      ytPlayer.setVolume(currentVolume);
+      if (audioMode === 'youtube') {
+        ytPlayerWrapper.classList.add('visible');
+        ytPlayer.playVideo();
+      }
+    }
+
+    function onPlayerStateChange(event) {
+      if (audioMode !== 'youtube') return;
+
+      if (event.data === YT.PlayerState.PLAYING) {
+        isPlaying = true;
+        updatePlayerUI(true);
+        musicStatus.textContent = 'YouTube';
+        try {
+          const videoData = ytPlayer.getVideoData();
+          if (videoData && videoData.title) {
+            currentTitle = videoData.title;
+            musicTitle.textContent = currentTitle;
+            localStorage.setItem(STORAGE_KEY_TITLE, currentTitle);
+          }
+        } catch (e) { }
+      } else if (event.data === YT.PlayerState.PAUSED) {
+        isPlaying = false;
+        updatePlayerUI(false);
+      } else if (event.data === YT.PlayerState.ENDED) {
+        ytPlayer.playVideo();
+      }
+    }
+
+    function onPlayerError(event) {
+      console.warn("Erro YouTube:", event.data);
+      if (audioMode === 'youtube') {
+        isPlaying = false;
+        updatePlayerUI(false);
+        musicStatus.textContent = 'Erro no YouTube';
+        showToast("Este vídeo não permitiu reprodução. Alternando para Rádio Lofi...");
+        // Transição suave para áudio seguro
+        setTimeout(() => {
+          playStream(DEFAULT_STREAM.url, DEFAULT_STREAM.title);
+        }, 1500);
+      }
+    }
+
+    function updatePlayerUI(playing) {
+      if (playing) {
+        iconPlay.style.display = 'none';
+        iconPause.style.display = 'block';
+        equalizer.classList.add('playing');
+      } else {
+        iconPlay.style.display = 'block';
+        iconPause.style.display = 'none';
+        equalizer.classList.remove('playing');
+        musicStatus.textContent = 'Pausado';
+      }
+    }
+
+    function playStream(url, title) {
+      audioMode = 'stream';
+      currentStreamUrl = url;
+      currentTitle = title;
+      localStorage.setItem(STORAGE_KEY_MODE, 'stream');
+      localStorage.setItem(STORAGE_KEY_STREAM_URL, url);
+      localStorage.setItem(STORAGE_KEY_TITLE, title);
+
+      // Pausa YouTube
+      if (isYtReady && ytPlayer) {
+        try { ytPlayer.pauseVideo(); } catch (e) { }
+      }
+      ytPlayerWrapper.classList.remove('visible');
+
+      // Toca Stream
+      streamAudio.src = currentStreamUrl;
+      streamAudio.volume = isMuted ? 0 : (currentVolume / 100);
+      streamAudio.play().then(() => {
+        musicStatus.textContent = 'Rádio Ao Vivo';
+        musicTitle.textContent = currentTitle;
+        showToast(title);
+      }).catch(err => {
+        console.warn("Autoplay bloqueado:", err);
+      });
+    }
+
+    function playYouTube(videoId, titleHint) {
+      audioMode = 'youtube';
+      currentVideoId = videoId;
+      localStorage.setItem(STORAGE_KEY_MODE, 'youtube');
+      localStorage.setItem(STORAGE_KEY_YT_ID, videoId);
+
+      // Pausa Stream
+      streamAudio.pause();
+      ytPlayerWrapper.classList.add('visible');
+
+      if (titleHint) {
+        currentTitle = titleHint;
+        musicTitle.textContent = titleHint;
+      }
+      musicStatus.textContent = 'YouTube';
+
+      if (isYtReady && ytPlayer) {
+        ytPlayer.loadVideoById(videoId);
+        ytPlayer.unMute();
+        ytPlayer.setVolume(currentVolume);
+        ytPlayer.playVideo();
+        showToast("Carregando YouTube...");
+      }
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) {
+        if (audioMode === 'stream') streamAudio.pause();
+        else if (isYtReady && ytPlayer) ytPlayer.pauseVideo();
+      } else {
+        if (audioMode === 'stream') {
+          streamAudio.play().catch(() => { });
+        } else if (isYtReady && ytPlayer) {
+          ytPlayer.playVideo();
+        }
+      }
+    }
+
+    function toggleMute() {
+      if (isMuted) {
+        isMuted = false;
+        streamAudio.volume = currentVolume / 100;
+        if (isYtReady && ytPlayer) {
+          ytPlayer.unMute();
+          ytPlayer.setVolume(currentVolume);
+        }
+        volumeSlider.value = currentVolume;
+        iconVolumeHigh.style.display = 'block';
+        iconVolumeMute.style.display = 'none';
+        showToast(`Volume: ${currentVolume}%`);
+      } else {
+        isMuted = true;
+        streamAudio.volume = 0;
+        if (isYtReady && ytPlayer) ytPlayer.mute();
+        volumeSlider.value = 0;
+        iconVolumeHigh.style.display = 'none';
+        iconVolumeMute.style.display = 'block';
+        showToast("Mudo");
+      }
+    }
+
+    function setVolume(vol) {
+      currentVolume = parseInt(vol, 10);
+      localStorage.setItem(STORAGE_KEY_VOLUME, currentVolume);
+
+      if (currentVolume === 0) {
+        isMuted = true;
+        streamAudio.volume = 0;
+        if (isYtReady && ytPlayer) ytPlayer.mute();
+        iconVolumeHigh.style.display = 'none';
+        iconVolumeMute.style.display = 'block';
+      } else {
+        isMuted = false;
+        streamAudio.volume = currentVolume / 100;
+        if (isYtReady && ytPlayer) {
+          ytPlayer.unMute();
+          ytPlayer.setVolume(currentVolume);
+        }
+        iconVolumeHigh.style.display = 'block';
+        iconVolumeMute.style.display = 'none';
+      }
+    }
+
+    function nextPreset() {
+      let currentIndex = STREAM_PRESETS.findIndex(p => p.url === currentStreamUrl);
+      let nextIndex = (currentIndex + 1) % STREAM_PRESETS.length;
+      playStream(STREAM_PRESETS[nextIndex].url, STREAM_PRESETS[nextIndex].title);
+    }
+
+    function toggleClock() {
+      showClock = !showClock;
+      clockWidget.style.display = showClock ? 'flex' : 'none';
+      checkClock.checked = showClock;
+      localStorage.setItem(STORAGE_KEY_CLOCK, showClock);
+      showToast(showClock ? "Relógio Ativado" : "Relógio Oculto");
+    }
+
+    /* =============================================================
+       GARANTIR QUE O VÍDEO PRINCIPAL NUNCA PARE
+       ============================================================= */
+    bgVideo.addEventListener('ended', () => {
+      bgVideo.currentTime = 0;
+      bgVideo.play();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        if (bgVideo.paused) bgVideo.play();
+        if (isPlaying) {
+          if (audioMode === 'stream' && streamAudio.paused) streamAudio.play().catch(() => { });
+          if (audioMode === 'youtube' && isYtReady && ytPlayer) ytPlayer.playVideo();
+        }
+      }
+    });
+
+    /* =============================================================
+       MODO OCIOSO (AUTO-HIDE DA INTERFACE)
+       ============================================================= */
+    function resetIdleTimer() {
+      document.body.classList.remove('idle');
+      clearTimeout(idleTimeout);
+      if (settingsModal.classList.contains('open')) return;
+      if (!autoplayUnlocker.classList.contains('hidden')) return;
+
+      idleTimeout = setTimeout(() => {
+        document.body.classList.add('idle');
+      }, 4500);
+    }
+
+    window.addEventListener('mousemove', resetIdleTimer);
+    window.addEventListener('mousedown', resetIdleTimer);
+    window.addEventListener('touchstart', resetIdleTimer);
+
+    /* =============================================================
+       FULLSCREEN
+       ============================================================= */
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => { });
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      if (document.fullscreenElement) {
+        iconFsEnter.style.display = 'none';
+        iconFsExit.style.display = 'block';
+        showToast("Modo TV Tela Cheia");
+      } else {
+        iconFsEnter.style.display = 'block';
+        iconFsExit.style.display = 'none';
+      }
+    });
+
+    /* =============================================================
+       TOAST
+       ============================================================= */
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    /* =============================================================
+       MODAL DE CONFIGURAÇÕES
+       ============================================================= */
+    function openModal() {
+      settingsModal.classList.add('open');
+      document.body.classList.remove('idle');
+      clearTimeout(idleTimeout);
+      updatePresetChipsUI();
+      setTimeout(() => {
+        const firstPreset = settingsModal.querySelector('.preset-chip');
+        if (firstPreset) setTVFocus(firstPreset);
+      }, 100);
+    }
+
+    function closeModal() {
+      settingsModal.classList.remove('open');
+      resetIdleTimer();
+      setTVFocus(btnSettings);
+    }
+
+    function updatePresetChipsUI() {
+      document.querySelectorAll('#streamPresets .preset-chip').forEach(btn => {
+        const url = btn.getAttribute('data-url');
+        if (audioMode === 'stream' && currentStreamUrl === url) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
+    // Clique nas Rádios do Modal
+    document.querySelectorAll('#streamPresets .preset-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.getAttribute('data-url');
+        const title = btn.getAttribute('data-title');
+        playStream(url, title);
+        closeModal();
+      });
+    });
+
+    // Salvar configuração com link do YouTube
+    btnSaveConfig.addEventListener('click', () => {
+      const val = ytInput.value.trim();
+      if (val !== '') {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = val.match(regExp);
+        let id = (match && match[2].length === 11) ? match[2] : null;
+        if (!id && /^[a-zA-Z0-9_-]{11}$/.test(val)) id = val;
+
+        if (id) {
+          playYouTube(id, "Trilha do YouTube");
+        } else {
+          showToast("Link do YouTube inválido.");
+          return;
+        }
+      }
+
+      showClock = checkClock.checked;
+      clockWidget.style.display = showClock ? 'flex' : 'none';
+      localStorage.setItem(STORAGE_KEY_CLOCK, showClock);
+
+      closeModal();
+    });
+
+    /* =============================================================
+       DESBLOQUEIO DE AUTOPLAY
+       ============================================================= */
+    function unlockAudio() {
+      autoplayUnlocker.classList.add('hidden');
+      if (bgVideo.paused) bgVideo.play();
+
+      if (audioMode === 'stream') {
+        playStream(currentStreamUrl, currentTitle);
+      } else if (audioMode === 'youtube' && isYtReady && ytPlayer) {
+        ytPlayer.playVideo();
+      } else {
+        playStream(DEFAULT_STREAM.url, DEFAULT_STREAM.title);
+      }
+
+      setTVFocus(btnPlayPause);
+      resetIdleTimer();
+    }
+
+    autoplayUnlocker.addEventListener('click', unlockAudio);
+    unlockCard.addEventListener('click', (e) => {
+      e.stopPropagation();
+      unlockAudio();
+    });
+
+    /* Listeners nos botões */
+    btnPlayPause.addEventListener('click', togglePlayPause);
+    btnMute.addEventListener('click', toggleMute);
+    volumeSlider.addEventListener('input', (e) => setVolume(e.target.value));
+    btnSettings.addEventListener('click', openModal);
+    btnCloseModal.addEventListener('click', closeModal);
+    btnCancelConfig.addEventListener('click', closeModal);
+    btnFullscreen.addEventListener('click', toggleFullScreen);
+
+    /* =============================================================
+       CONTROLE REMOTO DE SMART TV (D-PAD & TECLAS)
+       ============================================================= */
+    window.addEventListener('keydown', (e) => {
+      const keyCode = e.keyCode || e.which;
+      const key = e.key;
+      const isInputActive = document.activeElement === ytInput;
+
+      // D-Pad
+      if (key === 'ArrowLeft' || keyCode === 37 || keyCode === 21) {
+        if (isInputActive) return;
+        e.preventDefault();
+        handleTVNavigation('left');
+        return;
+      }
+      if (key === 'ArrowRight' || keyCode === 39 || keyCode === 22) {
+        if (isInputActive) return;
+        e.preventDefault();
+        handleTVNavigation('right');
+        return;
+      }
+      if (key === 'ArrowUp' || keyCode === 38 || keyCode === 19) {
+        e.preventDefault();
+        handleTVNavigation('up');
+        return;
+      }
+      if (key === 'ArrowDown' || keyCode === 40 || keyCode === 20) {
+        e.preventDefault();
+        handleTVNavigation('down');
+        return;
+      }
+
+      // OK / Enter
+      if (key === 'Enter' || key === 'Select' || key === 'Accept' || keyCode === 13 || keyCode === 23 || keyCode === 65385) {
+        e.preventDefault();
+        handleTVSelect();
+        return;
+      }
+
+      // Voltar / Back / Escape
+      if (key === 'Escape' || key === 'Back' || key === 'GoBack' || keyCode === 27 || keyCode === 10009 || keyCode === 461 || keyCode === 4) {
+        e.preventDefault();
+        handleTVBack();
+        return;
+      }
+
+      // Mídia
+      if (key === 'MediaPlay' || keyCode === 415) {
+        e.preventDefault();
+        if (!isPlaying) togglePlayPause();
+        return;
+      }
+      if (key === 'MediaPause' || keyCode === 19) {
+        e.preventDefault();
+        if (isPlaying) togglePlayPause();
+        return;
+      }
+      if (key === 'MediaPlayPause' || keyCode === 10252) {
+        e.preventDefault();
+        togglePlayPause();
+        return;
+      }
+
+      // Volume
+      if (key === 'VolumeUp' || keyCode === 447) {
+        e.preventDefault();
+        setVolume(Math.min(100, currentVolume + 5));
+        volumeSlider.value = currentVolume;
+        showToast(`Volume: ${currentVolume}%`);
+        return;
+      }
+      if (key === 'VolumeDown' || keyCode === 448) {
+        e.preventDefault();
+        setVolume(Math.max(0, currentVolume - 5));
+        volumeSlider.value = currentVolume;
+        showToast(`Volume: ${currentVolume}%`);
+        return;
+      }
+      if (key === 'VolumeMute' || keyCode === 449) {
+        e.preventDefault();
+        toggleMute();
+        return;
+      }
+
+      // Teclas Coloridas (TV)
+      if (keyCode === 403 || key === 'ColorF0Red' || key.toLowerCase() === 'r') {
+        e.preventDefault();
+        if (settingsModal.classList.contains('open')) closeModal();
+        else openModal();
+        return;
+      }
+      if (keyCode === 404 || key === 'ColorF1Green' || key.toLowerCase() === 'g') {
+        e.preventDefault();
+        toggleClock();
+        return;
+      }
+      if (keyCode === 405 || key === 'ColorF2Yellow' || key.toLowerCase() === 'y') {
+        e.preventDefault();
+        toggleFullScreen();
+        return;
+      }
+      if (keyCode === 406 || key === 'ColorF3Blue' || key.toLowerCase() === 'b') {
+        e.preventDefault();
+        nextPreset();
+        return;
+      }
+
+      // Atalhos de teclado comuns
+      if (!isInputActive) {
+        if (key === ' ') {
+          e.preventDefault();
+          togglePlayPause();
+        } else if (key.toLowerCase() === 'm') {
+          toggleMute();
+        } else if (key.toLowerCase() === 'f') {
+          toggleFullScreen();
+        } else if (key.toLowerCase() === 's') {
+          if (settingsModal.classList.contains('open')) closeModal();
+          else openModal();
+        }
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setTVFocus(unlockCard);
+      musicTitle.textContent = currentTitle;
+    });
+  </script>
+</body>
+
+</html>
