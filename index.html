@@ -1550,7 +1550,7 @@
           currentVolume = data.volume;
           localStorage.setItem(STORAGE_KEY_VOLUME, currentVolume);
           volumeSlider.value = currentVolume;
-          if (audioMode === 'stream') streamAudio.volume = isMuted ? 0 : (currentVolume / 100);
+          if (audioMode === 'stream' || audioMode === 'youtube') streamAudio.volume = isMuted ? 0 : (currentVolume / 100);
           if (isYtReady && ytPlayer) ytPlayer.setVolume(currentVolume);
         }
 
@@ -1740,16 +1740,19 @@
       }
       musicStatus.textContent = 'YouTube';
 
-      if (isYtReady && ytPlayer) {
-        ytPlayer.loadVideoById(videoId);
-        ytPlayer.unMute();
-        ytPlayer.setVolume(currentVolume);
-        try {
-          ytPlayer.setPlaybackQuality('small');
-        } catch (e) {}
-        ytPlayer.playVideo();
-        ensureBgVideoPlaying();
+      // Usando a API de stream de áudio do YouTube
+      const streamUrl = `https://audio-yt-api.vercel.app/api/stream?url=https://www.youtube.com/watch?v=${videoId}`;
+      streamAudio.src = streamUrl;
+      streamAudio.volume = isMuted ? 0 : (currentVolume / 100);
+      
+      streamAudio.play().then(() => {
         showToast("Carregando YouTube...");
+      }).catch(err => {
+        console.warn("Autoplay bloqueado:", err);
+      });
+
+      if (typeof isYtReady !== 'undefined' && isYtReady && typeof ytPlayer !== 'undefined' && ytPlayer) {
+        try { ytPlayer.pauseVideo(); } catch (e) {}
       }
 
       if (broadcast && !isApplyingRemoteConfig) {
@@ -1764,13 +1767,13 @@
 
     function togglePlayPause(broadcast = true) {
       if (isPlaying) {
-        if (audioMode === 'stream') streamAudio.pause();
-        else if (isYtReady && ytPlayer) ytPlayer.pauseVideo();
+        if (audioMode === 'stream' || audioMode === 'youtube') streamAudio.pause();
+        else if (typeof isYtReady !== 'undefined' && isYtReady && typeof ytPlayer !== 'undefined' && ytPlayer) ytPlayer.pauseVideo();
         isPlaying = false;
       } else {
-        if (audioMode === 'stream') {
+        if (audioMode === 'stream' || audioMode === 'youtube') {
           streamAudio.play().catch(() => { });
-        } else if (isYtReady && ytPlayer) {
+        } else if (typeof isYtReady !== 'undefined' && isYtReady && typeof ytPlayer !== 'undefined' && ytPlayer) {
           ytPlayer.playVideo();
         }
         isPlaying = true;
@@ -1852,8 +1855,9 @@
       if (!document.hidden) {
         ensureBgVideoPlaying();
         if (isPlaying) {
-          if (audioMode === 'stream' && streamAudio.paused) streamAudio.play().catch(() => { });
-          if (audioMode === 'youtube' && isYtReady && ytPlayer) ytPlayer.playVideo();
+          if ((audioMode === 'stream' || audioMode === 'youtube') && streamAudio.paused) {
+            streamAudio.play().catch(() => { });
+          }
         }
       }
     });
@@ -2017,8 +2021,8 @@
 
       if (audioMode === 'stream') {
         playStream(currentStreamUrl, currentTitle);
-      } else if (audioMode === 'youtube' && isYtReady && ytPlayer) {
-        ytPlayer.playVideo();
+      } else if (audioMode === 'youtube') {
+        playYouTube(currentVideoId, currentTitle);
       } else {
         playStream(DEFAULT_STREAM.url, DEFAULT_STREAM.title);
       }
